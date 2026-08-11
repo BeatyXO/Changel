@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --color-vault-950: #0d0714;
+  --color-vault-900: #160b22;
+  --color-vault-800: #251037;
+  --color-vault-700: #460071;
+  --color-vault-500: #03ccff;
+  --color-vault-300: #09fbff;
+  --color-vault-200: #d7ecff;
+  --color-vault-100: #faf7ff;
+  --color-amberline: #d403e1;
+  --color-rustline: #ff5bba;
+  --color-skyline: #03ccff;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 70% 35% at 50% -12%, rgba(212, 3, 225, 0.28), transparent),
+    linear-gradient(rgba(202, 216, 184, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(202, 216, 184, 0.035) 1px, transparent 1px),
+    var(--color-vault-950);
+  background-size: 100% 100%, 34px 34px, 34px 34px, 100% 100%;
+  color: var(--color-vault-100);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.terminal-panel {
+  background: var(--color-vault-100);
+  color: var(--color-vault-950);
+  border: 1px solid rgba(216, 168, 70, 0.75);
+  box-shadow: 0 0 0 1px rgba(32, 39, 31, 0.75), 0 18px 50px rgba(0, 0, 0, 0.32);
+}
+
+.scanline {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanline::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 4px,
+    rgba(23, 28, 24, 0.04) 4px,
+    rgba(23, 28, 24, 0.04) 5px
+  );
+}
+
+::selection {
+  background: var(--color-amberline);
+  color: var(--color-vault-950);
+}
