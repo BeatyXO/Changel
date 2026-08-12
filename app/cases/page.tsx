@@ -44,10 +44,10 @@ export default function CasesPage() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="font-mono text-xs uppercase tracking-[0.24em] text-amberline">Case explorer</p>
-          <h1 className="mt-2 text-4xl font-black">Custody cases</h1>
+          <p className="font-mono text-xs uppercase tracking-[0.24em] text-amberline">Promise explorer</p>
+          <h1 className="mt-2 text-4xl font-black">Release promises</h1>
           <p className="mt-3 max-w-2xl text-vault-200">
-            Read-only browsing works without a wallet. Cases below are loaded from the deployed Custodi contract.
+            Read-only browsing works without a wallet. Promises below are loaded from the deployed Changel contract.
           </p>
         </div>
         <Button type="button" variant="outline" onClick={loadCases} disabled={loading}>

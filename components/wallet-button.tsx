@@ -42,7 +42,7 @@ export function WalletButton() {
   } = useWallet();
 
   async function onImport() {
-    const value = window.prompt("Paste exported Custodi browser private key");
+    const value = window.prompt("Paste exported Changel browser private key");
     if (value) importPrivateKey(value.trim());
   }
 

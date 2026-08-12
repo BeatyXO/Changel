@@ -16,7 +16,7 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div>
         <p className="font-mono text-xs uppercase tracking-[0.24em] text-amberline">Protocol desk</p>
-        <h1 className="mt-2 text-4xl font-black">Custodi dashboard</h1>
+        <h1 className="mt-2 text-4xl font-black">Changel dashboard</h1>
       </div>
       <section className="grid gap-4 md:grid-cols-4">
         {stats.map(([label, value, Icon]) => (

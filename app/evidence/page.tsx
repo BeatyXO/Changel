@@ -158,7 +158,7 @@ export default function EvidencePage() {
         <CardContent>
           <form className="grid gap-4" onSubmit={onSubmit}>
             <div className="grid gap-2">
-              <Label htmlFor="caseId">Custody case</Label>
+              <Label htmlFor="caseId">Release promise</Label>
               <select
                 className={selectClass}
                 disabled={!wallet.address || loadingCases || cases.length === 0}
@@ -180,7 +180,7 @@ export default function EvidencePage() {
               </select>
               {selectedCase ? (
                 <p className="text-xs text-vault-950/60">
-                  Lender {shortAddress(selectedCase.lender)} · Borrower {shortAddress(selectedCase.borrower)}
+                  Team {shortAddress(selectedCase.lender)} · User {shortAddress(selectedCase.borrower)}
                 </p>
               ) : null}
             </div>
