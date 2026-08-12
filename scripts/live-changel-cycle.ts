@@ -41,6 +41,8 @@ async function main() {
     [
       "Q3 API migration promise",
       "open-source SaaS release",
+      "https://github.com/BeatyXO/Changel",
+      "74f1167",
       user.address,
       "The release must ship the v3 API migration guide, document the breaking endpoint changes, and publish a security fix summary.",
       "2026-12-31",
@@ -55,19 +57,24 @@ async function main() {
   const acceptHash = await write(userClient, "accept_promise", [id]);
   const baselineHash = await write(teamClient, "submit_pickup_evidence", [
     id,
-    "https://raw.githubusercontent.com/BeatyXO/Custodi/main/README.md",
-    "The team published the promise and its baseline release terms.",
+    "https://raw.githubusercontent.com/BeatyXO/Changel/main/README.md",
+    "The team published the promise and its baseline release terms for the bound Changel source.",
   ]);
   const releaseHash = await write(userClient, "submit_release_evidence", [
     id,
-    "https://raw.githubusercontent.com/BeatyXO/ConsentClip/main/README.md",
+    "https://raw.githubusercontent.com/BeatyXO/Changel/74f1167/README.md",
     "The shipped release evidence contains the migration and security documentation claims.",
+  ]);
+  const counterHash = await write(userClient, "submit_counter_evidence", [
+    id,
+    "https://raw.githubusercontent.com/BeatyXO/Changel/main/README.md",
+    "Counter-evidence asks validators to compare the bound release reference with the published migration and security claims.",
   ]);
   const challengeHash = await write(userClient, "challenge_promise", [id]);
 
   const finalCase = JSON.parse(String(await read(teamClient, "get_case", [String(id)])));
   const evidence = await read(teamClient, "get_evidence", [String(id)]);
-  console.log(JSON.stringify({ id, finalCase, evidence, txs: { createHash, acceptHash, baselineHash, releaseHash, challengeHash } }, null, 2));
+  console.log(JSON.stringify({ id, finalCase, evidence, txs: { createHash, acceptHash, baselineHash, releaseHash, counterHash, challengeHash } }, null, 2));
 }
 
 main().catch((error) => {
