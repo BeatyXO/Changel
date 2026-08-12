@@ -5,8 +5,8 @@ import { ExecutionResult, TransactionStatus } from "genlayer-js/types";
 const address = process.env.NEXT_PUBLIC_CHANGEL_CONTRACT_ADDRESS as `0x${string}`;
 if (!address) throw new Error("NEXT_PUBLIC_CHANGEL_CONTRACT_ADDRESS is required.");
 
-const team = createAccount(generatePrivateKey());
-const user = createAccount(generatePrivateKey());
+const team = createAccount((process.env.CHANGEL_TEAM_PRIVATE_KEY || generatePrivateKey()) as `0x${string}`);
+const user = createAccount((process.env.CHANGEL_USER_PRIVATE_KEY || generatePrivateKey()) as `0x${string}`);
 const teamClient = createClient({ chain: studionet, account: team });
 const userClient = createClient({ chain: studionet, account: user });
 
@@ -35,26 +35,32 @@ async function main() {
   console.log(`team=${team.address}`);
   console.log(`user=${user.address}`);
 
-  const createHash = await write(
-    teamClient,
-    "create_promise",
-    [
-      "Q3 API migration promise",
-      "open-source SaaS release",
-      "https://github.com/BeatyXO/Changel",
-      "74f1167",
-      user.address,
-      "The release must ship the v3 API migration guide, document the breaking endpoint changes, and publish a security fix summary.",
-      "2026-12-31",
-    ],
-    10n ** 16n,
-  );
-  const casesAfterCreate = JSON.parse(String(await read(teamClient, "get_cases", [100]))) as Array<{ id: string }>;
-  const id = casesAfterCreate.at(-1)?.id;
-  if (!id) throw new Error("The created promise was not returned by get_cases.");
-  console.log(`promise=${id} create_tx=${createHash}`);
-
-  const acceptHash = await write(userClient, "accept_promise", [id]);
+  let id = process.env.CHANGEL_PROMISE_ID || "";
+  let createHash = "skipped_existing_promise";
+  let acceptHash = "skipped_existing_promise";
+  if (!id) {
+    createHash = await write(
+      teamClient,
+      "create_promise",
+      [
+        "Q3 API migration promise",
+        "open-source SaaS release",
+        "https://github.com/BeatyXO/Changel",
+        "74f1167",
+        user.address,
+        "The release must ship the v3 API migration guide, document the breaking endpoint changes, and publish a security fix summary.",
+        "2026-12-31",
+      ],
+      10n ** 16n,
+    );
+    const casesAfterCreate = JSON.parse(String(await read(teamClient, "get_cases", [100]))) as Array<{ id: string }>;
+    id = casesAfterCreate.at(-1)?.id || "";
+    if (!id) throw new Error("The created promise was not returned by get_cases.");
+    console.log(`promise=${id} create_tx=${createHash}`);
+    acceptHash = await write(userClient, "accept_promise", [id]);
+  } else {
+    console.log(`continuing_existing_promise=${id}`);
+  }
   const baselineHash = await write(teamClient, "submit_pickup_evidence", [
     id,
     "https://raw.githubusercontent.com/BeatyXO/Changel/main/README.md",
