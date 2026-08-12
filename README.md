@@ -13,7 +13,7 @@ If evidence is unreachable, contradictory, or irrelevant, the contract records `
 ## Live project
 
 - App: https://changel-release-bonds.onwukweify19.chatgpt.site
-- Contract: `0xeACF4B63Fca65378001b5D2b6370289E9Bb7c498`
+- Contract: `0x12CD16108aCFC99660280D677EB498b927b5a2a3`
 - Network: GenLayer StudioNet
 
 ## Workflow

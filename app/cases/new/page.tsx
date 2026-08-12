@@ -36,6 +36,8 @@ export default function NewCasePage() {
     const form = new FormData(event.currentTarget);
     const title = String(form.get("title") ?? "").trim();
     const category = String(form.get("category") ?? "").trim();
+    const sourceUrl = String(form.get("sourceUrl") ?? "").trim();
+    const releaseRef = String(form.get("releaseRef") ?? "").trim();
     const borrower = String(form.get("borrower") ?? "").trim();
     const baseline = String(form.get("baseline") ?? "").trim();
     const dueAt = String(form.get("due") ?? "").trim();
@@ -57,7 +59,7 @@ export default function NewCasePage() {
       const result = await writeCustodi(
         identity,
         "create_promise",
-        [title, category, borrower, baseline, dueAt],
+        [title, category, sourceUrl, releaseRef, borrower, baseline, dueAt],
         depositWei,
       );
       setTxHash(result.hash);
@@ -91,8 +93,8 @@ export default function NewCasePage() {
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
-                  <Label htmlFor="category">Media type</Label>
-                  <Input id="category" name="category" placeholder="Item category" required />
+                  <Label htmlFor="category">Release scope</Label>
+                  <Input id="category" name="category" placeholder="API, security, migration, feature" required />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="deposit">Review bond in GEN</Label>
@@ -110,11 +112,19 @@ export default function NewCasePage() {
                 </div>
               </div>
               <div className="grid gap-2">
+                <Label htmlFor="sourceUrl">Bound source repository</Label>
+                <Input id="sourceUrl" name="sourceUrl" type="url" placeholder="https://github.com/org/repo" required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="releaseRef">Immutable release reference</Label>
+                <Input id="releaseRef" name="releaseRef" placeholder="v3.2.0 or commit SHA" required />
+              </div>
+              <div className="grid gap-2">
                 <Label htmlFor="baseline">Granted consent terms</Label>
                 <Textarea
                   id="baseline"
                   name="baseline"
-                  placeholder="Describe existing scratches, missing accessories, serial number, and agreed acceptable wear."
+                  placeholder="State the migration, security, API, or feature claims this release must fulfill."
                   required
                 />
               </div>

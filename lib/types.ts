@@ -11,7 +11,7 @@ export type CustodyStatus =
   | "recovered_unaccepted"
   | "recovered_undetermined";
 
-export type EvidenceKind = "pickup_photo" | "return_photo" | "receipt" | "condition_note" | "repair_quote";
+export type EvidenceKind = "pickup_photo" | "return_photo" | "receipt" | "condition_note" | "repair_quote" | "release_evidence" | "counter_evidence";
 
 export type DamageVerdict = "no_new_damage" | "minor_wear" | "material_damage" | "undetermined";
 

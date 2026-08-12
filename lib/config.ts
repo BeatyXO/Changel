@@ -17,6 +17,7 @@ export const contractFunctions = [
   "create_promise",
   "accept_promise",
   "submit_release_evidence",
+  "submit_counter_evidence",
   "challenge_promise",
   "create_release",
   "accept_release",

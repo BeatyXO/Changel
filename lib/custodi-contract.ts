@@ -42,7 +42,7 @@ const statuses: CustodyStatus[] = [
 ];
 
 const verdicts: DamageVerdict[] = ["no_new_damage", "minor_wear", "material_damage", "undetermined"];
-const evidenceKinds: EvidenceKind[] = ["pickup_photo", "return_photo", "receipt", "condition_note", "repair_quote"];
+const evidenceKinds: EvidenceKind[] = ["pickup_photo", "return_photo", "receipt", "condition_note", "repair_quote", "release_evidence", "counter_evidence"];
 
 export function parseContractList<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value as T[];
