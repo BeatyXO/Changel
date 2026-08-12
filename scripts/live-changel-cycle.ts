@@ -16,8 +16,8 @@ async function write(client: typeof teamClient, method: string, args: unknown[] 
   const receipt = await client.waitForTransactionReceipt({
     hash,
     status: TransactionStatus.FINALIZED,
-    interval: 8000,
-    retries: 90,
+    interval: 30000,
+    retries: 10,
   });
   if (receipt.txExecutionResultName === ExecutionResult.FINISHED_WITH_ERROR) {
     throw new Error(`${method} failed: ${hash}`);
