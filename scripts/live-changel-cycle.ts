@@ -53,32 +53,28 @@ async function main() {
       ],
       10n ** 16n,
     );
-    const casesAfterCreate = JSON.parse(String(await read(teamClient, "get_cases", [100]))) as Array<{ id: string }>;
+    const casesAfterCreate = JSON.parse(String(await read(teamClient, "get_promises", [100]))) as Array<{ id: string }>;
     id = casesAfterCreate.at(-1)?.id || "";
-    if (!id) throw new Error("The created promise was not returned by get_cases.");
+    if (!id) throw new Error("The created promise was not returned by get_promises.");
     console.log(`promise=${id} create_tx=${createHash}`);
-    acceptHash = await write(userClient, "accept_promise", [id]);
+    acceptHash = "not required: designated challenger can submit counter-evidence";
   } else {
     console.log(`continuing_existing_promise=${id}`);
   }
-  const baselineHash = await write(teamClient, "submit_pickup_evidence", [
-    id,
-    "https://raw.githubusercontent.com/BeatyXO/Changel/main/README.md",
-    "The team published the promise and its baseline release terms for the bound Changel source.",
-  ]);
-  const releaseHash = await write(userClient, "submit_release_evidence", [
+  const baselineHash = await write(teamClient, "submit_release_evidence", [
     id,
     "https://raw.githubusercontent.com/BeatyXO/Changel/74f1167/README.md",
-    "The shipped release evidence contains the migration and security documentation claims.",
+    "The team published the promise and its baseline release terms for the bound Changel source.",
   ]);
+  const releaseHash = "not used: only the team can submit release evidence";
   const counterHash = await write(userClient, "submit_counter_evidence", [
     id,
-    "https://raw.githubusercontent.com/BeatyXO/Changel/main/README.md",
+    "https://raw.githubusercontent.com/BeatyXO/Changel/74f1167/README.md",
     "Counter-evidence asks validators to compare the bound release reference with the published migration and security claims.",
   ]);
   const challengeHash = await write(userClient, "challenge_promise", [id]);
 
-  const finalCase = JSON.parse(String(await read(teamClient, "get_case", [String(id)])));
+  const finalCase = JSON.parse(String(await read(teamClient, "get_promise", [String(id)])));
   const evidence = await read(teamClient, "get_evidence", [String(id)]);
   console.log(JSON.stringify({ id, finalCase, evidence, txs: { createHash, acceptHash, baselineHash, releaseHash, counterHash, challengeHash } }, null, 2));
 }

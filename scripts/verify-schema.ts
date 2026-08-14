@@ -6,7 +6,7 @@ type HexAddress = `0x${string}`;
 
 async function main() {
   if (!contractAddress) {
-    console.log("No NEXT_PUBLIC_CUSTODI_CONTRACT_ADDRESS set; skipping schema verification.");
+    console.log("No NEXT_PUBLIC_CHANGEL_CONTRACT_ADDRESS set; skipping schema verification.");
     return;
   }
 
@@ -19,7 +19,7 @@ async function main() {
     throw new Error(`Missing contract functions: ${missing.join(", ")}`);
   }
 
-  console.log(`Schema verified for ${contractFunctions.length} Custodi functions.`);
+  console.log(`Schema verified for ${contractFunctions.length} Changel functions.`);
 }
 
 main().catch((error) => {

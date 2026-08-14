@@ -20,17 +20,17 @@ export default function CasesPage() {
     if (!contractAddress) {
       setCases([]);
       setLoading(false);
-      setError("No Custodi contract address is configured.");
+      setError("No Changel contract address is configured.");
       return;
     }
 
     try {
       setLoading(true);
       setError(undefined);
-      const result = await readCustodi("get_cases", [100]);
+      const result = await readCustodi("get_promises", [100]);
       setCases(parseContractList<ContractCase>(result).map((item) => toCustodyCase(item)).filter((item) => item.id > 0));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not read Custodi cases from GenLayer.");
+      setError(caught instanceof Error ? caught.message : "Could not read Changel promises from GenLayer.");
     } finally {
       setLoading(false);
     }
@@ -75,7 +75,7 @@ export default function CasesPage() {
             <CardTitle>Loading on-chain cases</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm leading-6 text-vault-950/75">Reading `get_cases(100)` from the deployed Custodi contract.</p>
+            <p className="text-sm leading-6 text-vault-950/75">Reading `get_promises(100)` from the deployed Changel contract.</p>
           </CardContent>
         </Card>
       ) : null}
@@ -88,11 +88,11 @@ export default function CasesPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm leading-6 text-vault-950/75">
-              This page read the deployed Custodi contract, but it returned an empty case list:
+              This page read the deployed Changel contract, but it returned an empty promise list:
               <span className="mt-2 block break-all font-mono text-xs">{contractAddress || "No contract configured"}</span>
             </p>
             <Link href="/cases/new">
-              <Button>Create the first handoff</Button>
+              <Button>Create the first promise</Button>
             </Link>
           </CardContent>
         </Card>

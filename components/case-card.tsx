@@ -21,7 +21,7 @@ export function CaseCard({ item }: { item: CustodyCase }) {
         <CardContent className="space-y-4">
           <div className="grid gap-2 text-sm text-vault-950/75">
             <p>{item.category}</p>
-            <p>Lender {shortAddress(item.lender)} · Borrower {shortAddress(item.borrower)}</p>
+            <p>Team {shortAddress(item.lender)} · Challenger {shortAddress(item.borrower)}</p>
           </div>
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div className="rounded-md border border-vault-700/20 p-2">
@@ -30,7 +30,7 @@ export function CaseCard({ item }: { item: CustodyCase }) {
             </div>
             <div className="rounded-md border border-vault-700/20 p-2">
               <Camera className="mb-1 h-4 w-4" />
-              {item.pickupEvidence + item.returnEvidence} proofs
+              {item.pickupEvidence + item.returnEvidence} evidence items
             </div>
             <div className="rounded-md border border-vault-700/20 p-2">
               <Timer className="mb-1 h-4 w-4" />

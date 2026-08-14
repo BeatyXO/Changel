@@ -32,7 +32,7 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm leading-6 text-vault-950/75">
-            Local seed metrics have been removed. Wire this dashboard to `get_cases`, `get_case`, and `get_evidence`
+            Local seed metrics have been removed. Wire this dashboard to `get_promises`, `get_promise`, and `get_evidence`
             on the deployed contract to show live counts.
           </p>
           <p className="mt-3 break-all font-mono text-xs text-vault-950/70">{contractAddress || "No contract configured"}</p>

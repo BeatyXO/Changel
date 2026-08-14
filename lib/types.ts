@@ -1,47 +1,11 @@
-export type CustodyStatus =
-  | "draft"
-  | "awaiting_borrower"
-  | "active"
-  | "return_submitted"
-  | "under_review"
-  | "released"
-  | "partial_release"
-  | "slashed"
-  | "undetermined"
-  | "recovered_unaccepted"
-  | "recovered_undetermined";
-
-export type EvidenceKind = "pickup_photo" | "return_photo" | "receipt" | "condition_note" | "repair_quote" | "release_evidence" | "counter_evidence";
-
-export type DamageVerdict = "no_new_damage" | "minor_wear" | "material_damage" | "undetermined";
+export type CustodyStatus = "open" | "evidence_submitted" | "settled" | "undetermined" | "recovered_undetermined";
+export type DamageVerdict = "fulfilled" | "partially_fulfilled" | "not_fulfilled" | "undetermined";
+export type EvidenceKind = "release_evidence" | "counter_evidence";
 
 export type CustodyCase = {
-  id: number;
-  title: string;
-  category: string;
-  lender: string;
-  borrower: string;
-  deposit: bigint;
-  status: CustodyStatus;
-  startedAt: string;
-  dueAt: string;
-  pickupEvidence: number;
-  returnEvidence: number;
-  verdict?: {
-    class: DamageVerdict;
-    releaseToBorrower: bigint;
-    releaseToLender: bigint;
-    confidence: number;
-    reasoning: string;
-  };
+  id: number; title: string; category: string; lender: string; borrower: string; deposit: bigint;
+  status: CustodyStatus; startedAt: string; dueAt: string; pickupEvidence: number; returnEvidence: number;
+  repositoryUrl: string; releaseRef: string; promiseTerms: string;
+  verdict?: { class: DamageVerdict; releaseToBorrower: bigint; releaseToLender: bigint; confidence: number; reasoning: string };
 };
-
-export type EvidenceItem = {
-  id: number;
-  caseId: number;
-  kind: EvidenceKind;
-  url: string;
-  note: string;
-  submittedBy: string;
-  submittedAt: string;
-};
+export type EvidenceItem = { id: number; caseId: number; kind: EvidenceKind; url: string; note: string; submittedBy: string; submittedAt: string };

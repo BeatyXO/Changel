@@ -83,13 +83,13 @@ export default function NewCasePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Handoff terms</CardTitle>
+            <CardTitle>Promise terms</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="grid gap-5" onSubmit={onSubmit}>
               <div className="grid gap-2">
-                <Label htmlFor="title">Media title</Label>
-                <Input id="title" name="title" placeholder="Item name and handoff purpose" required />
+                <Label htmlFor="title">Release promise title</Label>
+                <Input id="title" name="title" placeholder="v2 authentication migration" required />
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
@@ -103,11 +103,11 @@ export default function NewCasePage() {
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
-                  <Label htmlFor="borrower">Publisher address</Label>
+                  <Label htmlFor="borrower">Designated challenger address</Label>
                   <Input id="borrower" name="borrower" placeholder="0x…" required />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="due">Consent expiry</Label>
+                  <Label htmlFor="due">Target release date</Label>
                   <Input id="due" name="due" type="datetime-local" required />
                 </div>
               </div>
@@ -120,7 +120,7 @@ export default function NewCasePage() {
                 <Input id="releaseRef" name="releaseRef" placeholder="v3.2.0 or commit SHA" required />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="baseline">Granted consent terms</Label>
+                <Label htmlFor="baseline">Promise terms</Label>
                 <Textarea
                   id="baseline"
                   name="baseline"
@@ -129,14 +129,10 @@ export default function NewCasePage() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="photo">Pickup evidence URL</Label>
-                <Input id="photo" name="photo" type="url" placeholder="https://…" />
-                <p className="text-xs text-vault-950/60">
-                  This transaction creates the on-chain release. Add the published usage URL from the Evidence page.
-                </p>
+                <p className="text-xs text-vault-950/60">Evidence is added after creation. Each evidence URL must point to the bound GitHub repository and exact release reference.</p>
               </div>
               <Button type="submit" size="lg" disabled={!wallet.address || status === "submitting"}>
-                <FilePlus2 className="h-4 w-4" /> {status === "submitting" ? "Writing to GenLayer…" : "Create handoff"}
+                <FilePlus2 className="h-4 w-4" /> {status === "submitting" ? "Writing to GenLayer…" : "Create bonded promise"}
               </Button>
               {!wallet.address ? <p className="text-sm text-vault-950/70">Choose injected or browser wallet before writing.</p> : null}
               {error ? <p className="rounded-md border border-rustline/40 bg-rustline/10 p-3 text-sm text-rustline">{error}</p> : null}
@@ -160,8 +156,8 @@ export default function NewCasePage() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-vault-950/75">
             <p className="flex gap-2"><Coins className="h-4 w-4 shrink-0" /> Deposit value and settlement state.</p>
-            <p className="flex gap-2"><Camera className="h-4 w-4 shrink-0" /> Public evidence URLs, hashes, notes, and author.</p>
-            <p>Image files themselves stay off-chain; the contract fetches public URLs during consensus.</p>
+            <p className="flex gap-2"><Camera className="h-4 w-4 shrink-0" /> Promise, repository, release reference, evidence URLs, and author.</p>
+            <p>Validators only admit evidence bound to the named GitHub repository and release reference.</p>
           </CardContent>
         </Card>
         {status === "submitting" ? <TxStatus current="PROPOSING" /> : null}

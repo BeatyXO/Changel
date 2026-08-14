@@ -23,7 +23,7 @@ import type { CustodyCase, EvidenceItem } from "@/lib/types";
 import { shortAddress } from "@/lib/utils";
 import { useWallet } from "@/lib/wallet";
 
-type EvidenceWriteKind = "pickup_photo" | "return_photo";
+type EvidenceWriteKind = "release_evidence" | "counter_evidence";
 type SubmitStatus = "idle" | "submitting" | "finalized" | "error";
 
 const selectClass =
@@ -64,7 +64,7 @@ export default function EvidencePage() {
 
   const loadCases = useCallback(async () => {
     if (!contractAddress) {
-      setError("No Custodi contract address is configured.");
+      setError("No Changel contract address is configured.");
       setLoadingCases(false);
       return;
     }
@@ -80,7 +80,7 @@ export default function EvidencePage() {
     try {
       setLoadingCases(true);
       setError(undefined);
-      const result = await readCustodi("get_cases", [100]);
+      const result = await readCustodi("get_promises", [100]);
       const walletCases = parseContractList<ContractCase>(result)
         .map((item) => toCustodyCase(item))
         .filter((item) => item.id > 0 && isWalletCase(item, wallet.address));
@@ -92,7 +92,7 @@ export default function EvidencePage() {
       setSelectedCaseId(nextSelected);
       await loadEvidence(nextSelected);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not load your Custodi cases from GenLayer.");
+      setError(caught instanceof Error ? caught.message : "Could not load your Changel promises from GenLayer.");
     } finally {
       setLoadingCases(false);
     }
@@ -115,7 +115,7 @@ export default function EvidencePage() {
 
     const form = new FormData(event.currentTarget);
     const caseId = String(form.get("caseId") ?? "").trim();
-    const kind = String(form.get("kind") ?? "pickup_photo") as EvidenceWriteKind;
+    const kind = String(form.get("kind") ?? "release_evidence") as EvidenceWriteKind;
     const url = String(form.get("url") ?? "").trim();
     const note = String(form.get("note") ?? "").trim();
 
@@ -138,7 +138,7 @@ export default function EvidencePage() {
 
     try {
       setStatus("submitting");
-      const functionName = kind === "return_photo" ? "submit_release_evidence" : "submit_pickup_evidence";
+      const functionName = kind === "counter_evidence" ? "submit_counter_evidence" : "submit_release_evidence";
       const result = await writeCustodi(identity, functionName, [caseId, url, note]);
       setTxHash(result.hash);
       setStatus("finalized");
@@ -180,7 +180,7 @@ export default function EvidencePage() {
               </select>
               {selectedCase ? (
                 <p className="text-xs text-vault-950/60">
-                  Team {shortAddress(selectedCase.lender)} · User {shortAddress(selectedCase.borrower)}
+                  Team {shortAddress(selectedCase.lender)} · Challenger {shortAddress(selectedCase.borrower)}
                 </p>
               ) : null}
             </div>
@@ -188,11 +188,11 @@ export default function EvidencePage() {
             <div className="grid gap-2">
               <Label htmlFor="kind">Evidence kind</Label>
               <select className={selectClass} id="kind" name="kind" required>
-                <option value="pickup_photo">Pickup photo / baseline proof</option>
-                <option value="return_photo">Return photo / handback proof</option>
+                <option value="release_evidence">Release evidence (team)</option>
+                <option value="counter_evidence">Counter-evidence (designated challenger)</option>
               </select>
               <p className="text-xs text-vault-950/60">
-                Repair quotes can be attached as a public URL in the note, but the contract settlement flow compares pickup and return evidence.
+                The URL must belong to the selected promise's repository and exact release reference.
               </p>
             </div>
 
@@ -250,7 +250,7 @@ export default function EvidencePage() {
                   <article key={item.id} className="rounded-md border border-vault-700/20 p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <p className="inline-flex items-center gap-2 font-semibold">
-                        {item.kind === "pickup_photo" ? <Camera className="h-4 w-4" /> : <FileImage className="h-4 w-4" />}
+                        {item.kind === "release_evidence" ? <Camera className="h-4 w-4" /> : <FileImage className="h-4 w-4" />}
                         {item.kind.replace("_", " ")} #{item.id}
                       </p>
                       <span className="font-mono text-xs text-vault-950/60">{shortAddress(item.submittedBy)}</span>
