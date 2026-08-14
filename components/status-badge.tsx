@@ -7,6 +7,7 @@ const copy: Record<CustodyStatus, string> = {
   settled: "Settled",
   undetermined: "Undetermined",
   recovered_undetermined: "Bond recovered",
+  recovered_expired: "Expired bond recovered",
 };
 
 const tone: Record<CustodyStatus, string> = {
@@ -15,6 +16,7 @@ const tone: Record<CustodyStatus, string> = {
   settled: "border-vault-500/80 bg-vault-500/25",
   undetermined: "border-rustline/80 bg-rustline/20",
   recovered_undetermined: "border-vault-500/80 bg-vault-500/25",
+  recovered_expired: "border-vault-500/80 bg-vault-500/25",
 };
 
 export function StatusBadge({ status }: { status: CustodyStatus }) {

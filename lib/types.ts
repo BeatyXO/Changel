@@ -1,4 +1,4 @@
-export type CustodyStatus = "open" | "evidence_submitted" | "settled" | "undetermined" | "recovered_undetermined";
+export type CustodyStatus = "open" | "evidence_submitted" | "settled" | "undetermined" | "recovered_undetermined" | "recovered_expired";
 export type DamageVerdict = "fulfilled" | "partially_fulfilled" | "not_fulfilled" | "undetermined";
 export type EvidenceKind = "release_evidence" | "counter_evidence";
 

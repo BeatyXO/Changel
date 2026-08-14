@@ -36,6 +36,7 @@ async function main() {
   console.log(`user=${user.address}`);
 
   let id = process.env.CHANGEL_PROMISE_ID || "";
+  const evidenceCloseAt = new Date(Date.now() + 5 * 60_000).toISOString().slice(0, 16);
   let createHash = "skipped_existing_promise";
   let acceptHash = "skipped_existing_promise";
   if (!id) {
@@ -46,10 +47,10 @@ async function main() {
         "Q3 API migration promise",
         "open-source SaaS release",
         "https://github.com/BeatyXO/Changel",
-        "74f1167",
+        "a859874",
         user.address,
-        "The release must ship the v3 API migration guide, document the breaking endpoint changes, and publish a security fix summary.",
-        "2026-12-31",
+        "The release must replace inherited custody code with repository-bound release outcomes, counter-evidence, fair evidence closing, and bond recovery.",
+        evidenceCloseAt,
       ],
       10n ** 16n,
     );
@@ -63,15 +64,17 @@ async function main() {
   }
   const baselineHash = await write(teamClient, "submit_release_evidence", [
     id,
-    "https://raw.githubusercontent.com/BeatyXO/Changel/74f1167/README.md",
+    "https://raw.githubusercontent.com/BeatyXO/Changel/a859874/README.md",
     "The team published the promise and its baseline release terms for the bound Changel source.",
   ]);
   const releaseHash = "not used: only the team can submit release evidence";
   const counterHash = await write(userClient, "submit_counter_evidence", [
     id,
-    "https://raw.githubusercontent.com/BeatyXO/Changel/74f1167/README.md",
+    "https://raw.githubusercontent.com/BeatyXO/Changel/a859874/README.md",
     "Counter-evidence asks validators to compare the bound release reference with the published migration and security claims.",
   ]);
+  const waitMs = Math.max(0, new Date(`${evidenceCloseAt}:00.000Z`).getTime() - Date.now() + 10_000);
+  if (waitMs) await new Promise((resolve) => setTimeout(resolve, waitMs));
   const challengeHash = await write(userClient, "challenge_promise", [id]);
 
   const finalCase = JSON.parse(String(await read(teamClient, "get_promise", [String(id)])));

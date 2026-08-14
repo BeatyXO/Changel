@@ -7,6 +7,7 @@ from genlayer import *
 
 import json
 import typing
+import hashlib
 
 
 @gl.evm.contract_interface
@@ -66,6 +67,14 @@ class Changel(gl.Contract):
         except Exception:
             return False
 
+    def _now(self) -> str:
+        return str(gl.message_raw.get("datetime", ""))
+
+    def _evidence_closed(self, promise: typing.Any) -> bool:
+        # ISO-8601 UTC/local datetime strings compare lexicographically. The UI
+        # requires this format, avoiding validator-local clock interpretation.
+        return self._now() >= promise["evidence_close_at"]
+
     def _repo_slug(self, repository_url: str) -> str:
         value = repository_url.rstrip("/")
         prefix = "https://github.com/"
@@ -109,7 +118,7 @@ class Changel(gl.Contract):
         release_ref: str,
         challenger: str,
         promise_terms: str,
-        target_date: str,
+        evidence_close_at: str,
     ) -> str:
         if gl.message.value <= 0:
             raise gl.vm.UserError("EXPECTED_BOND_REQUIRED")
@@ -121,6 +130,8 @@ class Changel(gl.Contract):
             raise gl.vm.UserError("EXPECTED_BAD_CHALLENGER")
         if len(release_ref.strip()) < 1 or len(release_ref) > 120:
             raise gl.vm.UserError("EXPECTED_RELEASE_REFERENCE")
+        if len(evidence_close_at) < 16 or len(evidence_close_at) > 80 or "T" not in evidence_close_at:
+            raise gl.vm.UserError("EXPECTED_EVIDENCE_CLOSE_TIME")
         slug = self._repo_slug(repository_url)
         self.promise_counter = u256(self.promise_counter + 1)
         promise_id = str(self.promise_counter)
@@ -135,7 +146,7 @@ class Changel(gl.Contract):
             "repository_slug": slug,
             "release_ref": self._limit(release_ref, 120),
             "promise_terms": self._limit(promise_terms, 1600),
-            "target_date": self._limit(target_date, 80),
+            "evidence_close_at": self._limit(evidence_close_at, 80),
             "status": "open",
             "outcome": "",
             "team_allocation": "0",
@@ -144,6 +155,7 @@ class Changel(gl.Contract):
             "paid_to_challenger": "0",
             "confidence": 0,
             "reasoning": "",
+            "evidence_fingerprints": "[]",
         })
         self.promise_evidence_index[promise_id] = ""
         return promise_id
@@ -153,6 +165,8 @@ class Changel(gl.Contract):
         promise = self._load_promise(promise_id)
         if self._sender() != promise["team"]:
             raise gl.vm.UserError("EXPECTED_ONLY_TEAM")
+        if self._evidence_closed(promise):
+            raise gl.vm.UserError("EXPECTED_EVIDENCE_PERIOD_CLOSED")
         self._add_evidence(promise_id, promise, "release_evidence", url, note)
         if promise["status"] == "open":
             promise["status"] = "evidence_submitted"
@@ -163,6 +177,8 @@ class Changel(gl.Contract):
         promise = self._load_promise(promise_id)
         if self._sender() != promise["challenger"]:
             raise gl.vm.UserError("EXPECTED_ONLY_CHALLENGER")
+        if self._evidence_closed(promise):
+            raise gl.vm.UserError("EXPECTED_EVIDENCE_PERIOD_CLOSED")
         self._add_evidence(promise_id, promise, "counter_evidence", url, note)
 
     def _add_evidence(self, promise_id: str, promise: typing.Any, kind: str, url: str, note: str):
@@ -177,7 +193,7 @@ class Changel(gl.Contract):
         self.evidence[evidence_id] = self._json({
             "id": evidence_id, "promise_id": str(promise_id), "kind": kind,
             "url": self._limit(url, 400), "note": self._limit(note, 600),
-            "submitted_by": self._sender(),
+            "submitted_by": self._sender(), "submitted_at": self._now(),
         })
         prior = self.promise_evidence_index.get(str(promise_id), "")
         self.promise_evidence_index[str(promise_id)] = evidence_id if not prior else prior + "|" + evidence_id
@@ -188,6 +204,8 @@ class Changel(gl.Contract):
         self._require_party(promise)
         if promise["status"] not in ("open", "evidence_submitted"):
             raise gl.vm.UserError("EXPECTED_PROMISE_OPEN")
+        if not self._evidence_closed(promise):
+            raise gl.vm.UserError("EXPECTED_EVIDENCE_PERIOD_OPEN")
         evidence = self._evidence_for(promise_id)
         if not any(item["kind"] == "release_evidence" for item in evidence):
             raise gl.vm.UserError("EXPECTED_RELEASE_EVIDENCE")
@@ -213,9 +231,29 @@ class Changel(gl.Contract):
         promise["paid_to_challenger"] = str(challenger)
         promise["confidence"] = max(0, min(100, int(result.get("confidence", 0))))
         promise["reasoning"] = self._limit(result.get("reasoning", ""), 1200)
+        fingerprints = result.get("evidence_fingerprints", [])
+        promise["evidence_fingerprints"] = self._json(fingerprints if isinstance(fingerprints, list) else [])
         self.promises[str(promise_id)] = self._json(promise)
         self._pay(promise["team"], team)
         self._pay(promise["challenger"], challenger)
+
+    @gl.public.write
+    def recover_expired_without_evidence(self, promise_id: str):
+        """Return the team's bond only after the fair evidence period elapsed empty."""
+        promise = self._load_promise(promise_id)
+        if self._sender() != promise["team"]:
+            raise gl.vm.UserError("EXPECTED_ONLY_TEAM")
+        if promise["status"] != "open" or not self._evidence_closed(promise):
+            raise gl.vm.UserError("EXPECTED_EXPIRED_OPEN_PROMISE")
+        if self.promise_evidence_index.get(str(promise_id), ""):
+            raise gl.vm.UserError("EXPECTED_NO_EVIDENCE_FOR_EXPIRY_RECOVERY")
+        amount = int(promise["bond"])
+        promise["status"] = "recovered_expired"
+        promise["team_allocation"] = str(amount)
+        promise["paid_to_team"] = str(amount)
+        promise["reasoning"] = "Evidence period expired without any release evidence; bond returned to team."
+        self.promises[str(promise_id)] = self._json(promise)
+        self._pay(promise["team"], amount)
 
     @gl.public.write
     def recover_undetermined(self, promise_id: str):
@@ -248,14 +286,20 @@ class Changel(gl.Contract):
         def leader() -> str:
             fetched = []
             for item in evidence:
-                body = gl.nondet.web.render(item["url"], mode="text")
-                fetched.append({"kind": item["kind"], "url": item["url"], "note": item["note"], "content": str(body)[:1800]})
+                try:
+                    content = str(gl.nondet.web.render(item["url"], mode="text"))
+                    fetched.append({"kind": item["kind"], "url": item["url"], "note": item["note"], "content": content[:1800], "render_status": "rendered", "content_sha256": hashlib.sha256(content.encode("utf-8")).hexdigest()})
+                except Exception:
+                    # Rendering failure is a defined adjudication outcome—not an
+                    # exception that strands the bond or permits partial review.
+                    return self._json({"outcome": "undetermined", "confidence": 0, "reasoning": "EXTERNAL_RENDER_FAILED: bound evidence could not be rendered.", "evidence_fingerprints": [{"url": item["url"], "render_status": "render_failed"}]})
             prompt = (
                 "You adjudicate a release promise. Return JSON only: outcome, confidence, reasoning. "
                 "Outcome is fulfilled, partially_fulfilled, not_fulfilled, or undetermined. "
                 "First verify every fetched URL belongs to repository " + promise["repository_slug"] +
                 " and exact release reference " + promise["release_ref"] + ". "
-                "Promise terms: " + promise["promise_terms"] + ". Evidence: " + json.dumps(fetched)
+                "Promise terms: " + promise["promise_terms"] + ". Evidence: " + json.dumps(fetched) +
+                ". Include evidence_fingerprints as the URL, render_status, and content_sha256 for each fetched item."
             )
             return str(gl.nondet.exec_prompt(prompt))[:2600]
         return gl.eq_principle.prompt_comparative(leader, FULFILLMENT_EQ_PRINCIPLE)

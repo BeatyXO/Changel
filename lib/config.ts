@@ -19,6 +19,7 @@ export const contractFunctions = [
   "submit_counter_evidence",
   "challenge_promise",
   "recover_undetermined",
+  "recover_expired_without_evidence",
   "get_promise",
   "get_promises",
   "get_evidence",

@@ -107,7 +107,7 @@ export default function NewCasePage() {
                   <Input id="borrower" name="borrower" placeholder="0x…" required />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="due">Target release date</Label>
+                  <Label htmlFor="due">Evidence-close date and time</Label>
                   <Input id="due" name="due" type="datetime-local" required />
                 </div>
               </div>
@@ -157,7 +157,7 @@ export default function NewCasePage() {
           <CardContent className="space-y-3 text-sm text-vault-950/75">
             <p className="flex gap-2"><Coins className="h-4 w-4 shrink-0" /> Deposit value and settlement state.</p>
             <p className="flex gap-2"><Camera className="h-4 w-4 shrink-0" /> Promise, repository, release reference, evidence URLs, and author.</p>
-            <p>Validators only admit evidence bound to the named GitHub repository and release reference.</p>
+            <p>Validators only admit evidence bound to the named GitHub repository and release reference. Both parties can submit evidence until the evidence-close time; review opens after it.</p>
           </CardContent>
         </Card>
         {status === "submitting" ? <TxStatus current="PROPOSING" /> : null}
