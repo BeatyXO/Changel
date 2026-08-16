@@ -21,8 +21,10 @@ The contract stores the promise terms, canonical `https://github.com/owner/repos
 
 ## Contract surface
 
+Current StudioNet contract: `0x74E9f63087480Dd899443b117ba8d8b65DeE43B3`.
+
 ```text
-create_promise(title, scope, repository_url, release_ref, challenger, promise_terms, target_date) payable
+create_promise(title, scope, repository_url, immutable_commit_sha, challenger, promise_terms, evidence_close_at) payable
 submit_release_evidence(promise_id, url, note)                 # team only
 submit_counter_evidence(promise_id, url, note)                 # designated challenger only
 challenge_promise(promise_id)                                  # either party; GenLayer consensus
