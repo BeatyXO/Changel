@@ -2,7 +2,7 @@
 
 Changel is a bonded release-promise accountability app for open-source and SaaS teams on GenLayer.
 
-A team locks a GEN bond against a precise promise, one GitHub repository, and one release reference. The designated challenger can submit counter-evidence. GenLayer validators fetch only evidence that is tied to that repository and release, then adjudicate whether the release materially fulfilled its stored terms.
+A team locks a GEN bond against a precise promise, one canonical GitHub repository, and one immutable 40-character commit SHA. The designated challenger can submit counter-evidence. GenLayer validators receive both parties' evidence only after the evidence-close period.
 
 ## Contract outcomes and allocations
 
@@ -17,7 +17,7 @@ There are no appeal or expiry functions. The contract exposes only paths it impl
 
 ## Evidence binding
 
-The contract stores the promise terms, canonical `https://github.com/owner/repository` URL, and exact release reference. It rejects every release-evidence and counter-evidence URL unless it includes both the same repository and that release reference. Validators also fetch the bound evidence and treat it as data, never instructions.
+The contract stores the promise terms, canonical `https://github.com/owner/repository` URL, and immutable commit SHA. It admits only canonical exact GitHub commit URLs or raw GitHub URLs beginning with that exact owner/repo/SHA path—lookalike and substring URLs are rejected. Each side may submit up to four evidence items; review requires at least one team and one challenger item. Validators record URL, render status, and SHA-256 content fingerprints. Malformed validator output settles only as recoverable `undetermined`.
 
 ## Contract surface
 

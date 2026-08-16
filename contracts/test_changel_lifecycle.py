@@ -27,9 +27,9 @@ class ChangelLifecycleTests(unittest.TestCase):
     def sender(self, address): self.gl.message.sender_address.as_hex=address
     def create(self, bond=100):
         self.gl.message_raw["datetime"]="2026-01-01T00:00"; self.sender(self.team); self.gl.message.value=bond
-        return self.contract.create_promise("v2 security release", "security", "https://github.com/acme/widget", "v2.0.0", self.challenger, "Ship the authenticated API migration and security remediation notes.", "2026-12-31T00:00")
+        return self.contract.create_promise("v2 security release", "security", "https://github.com/acme/widget", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", self.challenger, "Ship the authenticated API migration and security remediation notes.", "2026-12-31T00:00")
     def evidence(self, promise_id):
-        self.sender(self.team); self.contract.submit_release_evidence(promise_id, "https://github.com/acme/widget/releases/tag/v2.0.0", "Release notes")
+        self.sender(self.team); self.contract.submit_release_evidence(promise_id, "https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/README.md", "Release notes"); self.sender(self.challenger); self.contract.submit_counter_evidence(promise_id, "https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/README.md", "Counter")
     def test_all_explicit_outcomes_pay_documented_bands(self):
         expected={"fulfilled":[(self.team,100)], "partially_fulfilled":[(self.team,70),(self.challenger,30)], "not_fulfilled":[(self.challenger,100)]}
         for outcome, transfers in expected.items():
@@ -42,7 +42,7 @@ class ChangelLifecycleTests(unittest.TestCase):
     def test_counter_evidence_must_match_bound_repository_and_release(self):
         promise_id=self.create(); self.sender(self.challenger)
         with self.assertRaises(ValueError): self.contract.submit_counter_evidence(promise_id,"https://github.com/elsewhere/repo/releases/tag/v2.0.0","Wrong repo")
-        self.contract.submit_counter_evidence(promise_id,"https://github.com/acme/widget/releases/tag/v2.0.0","Bound counter evidence")
+        self.contract.submit_counter_evidence(promise_id,"https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/README.md","Bound counter evidence")
     def test_undetermined_bond_can_be_recovered(self):
         promise_id=self.create(); self.evidence(promise_id); self.contract._review=lambda *_:'{"outcome":"undetermined","confidence":0,"reasoning":"unavailable"}'; self.gl.message_raw["datetime"]="2027-01-01T00:00"
         self.sender(self.challenger); self.contract.challenge_promise(promise_id); self.assertEqual(TRANSFERS, [])
@@ -59,14 +59,21 @@ class ChangelLifecycleTests(unittest.TestCase):
         self.assertIn("render_failed", record["evidence_fingerprints"])
     def test_evidence_order_and_expiry_recovery_are_enforced(self):
         promise_id=self.create(); self.evidence(promise_id); self.sender(self.challenger)
-        self.contract.submit_counter_evidence(promise_id,"https://github.com/acme/widget/releases/tag/v2.0.0","Counter")
+        self.contract.submit_counter_evidence(promise_id,"https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/README.md","Counter")
         ordered=self.contract._evidence_for(promise_id)
-        self.assertEqual([x["kind"] for x in ordered], ["release_evidence", "counter_evidence"])
+        self.assertEqual([x["kind"] for x in ordered][:2], ["release_evidence", "counter_evidence"])
         self.gl.message_raw["datetime"]="2027-01-01T00:00"
-        with self.assertRaises(ValueError): self.contract.submit_counter_evidence(promise_id,"https://github.com/acme/widget/releases/tag/v2.0.0","Late")
+        with self.assertRaises(ValueError): self.contract.submit_counter_evidence(promise_id,"https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/README.md","Late")
         empty=self.create(); self.gl.message_raw["datetime"]="2027-01-01T00:00"; self.sender(self.team); self.contract.recover_expired_without_evidence(empty)
         self.assertIn((self.team,100), TRANSFERS)
     def test_detail_client_uses_string_promise_id(self):
         source=(Path(__file__).parents[1] / "app" / "cases" / "[id]" / "page.tsx").read_text(encoding="utf-8")
         self.assertIn("String(id)", source)
+    def test_lookalikes_slots_and_malformed_output_are_hostile(self):
+        promise_id=self.create(); self.sender(self.team)
+        with self.assertRaises(ValueError): self.contract.submit_release_evidence(promise_id,"https://evil.test/https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/README.md","lookalike")
+        for number in range(4): self.contract.submit_release_evidence(promise_id,"https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/file"+str(number),"team")
+        with self.assertRaises(ValueError): self.contract.submit_release_evidence(promise_id,"https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/overflow","overflow")
+        parsed=self.contract._parse('{"outcome":"fulfilled","reasoning":{"nested":true},"confidence":"bad"}')
+        self.assertEqual(parsed["outcome"], "undetermined")
 if __name__ == "__main__": unittest.main()

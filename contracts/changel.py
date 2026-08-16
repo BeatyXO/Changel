@@ -81,7 +81,7 @@ class Changel(gl.Contract):
         if not value.startswith(prefix):
             raise gl.vm.UserError("EXPECTED_GITHUB_REPOSITORY")
         slug = value[len(prefix):]
-        if slug.count("/") != 1 or len(slug) < 3 or len(slug) > 160:
+        if slug.count("/") != 1 or len(slug) < 3 or len(slug) > 160 or "?" in slug or "#" in slug:
             raise gl.vm.UserError("EXPECTED_GITHUB_REPOSITORY")
         return slug.lower()
 
@@ -100,14 +100,9 @@ class Changel(gl.Contract):
         slug = promise["repository_slug"]
         ref = promise["release_ref"].lower()
         value = url.lower()
-        github_path = "github.com/" + slug
-        raw_path = "raw.githubusercontent.com/" + slug + "/"
-        if github_path not in value and raw_path not in value:
-            return False
-        # Prevent evidence from an arbitrary branch, issue, or unrelated release.
-        return ("/releases/tag/" + ref in value or "/commit/" + ref in value or
-                "/tree/" + ref in value or "/blob/" + ref in value or
-                raw_path + ref + "/" in value)
+        raw_prefix = "https://raw.githubusercontent.com/" + slug + "/" + ref + "/"
+        commit_prefix = "https://github.com/" + slug + "/commit/" + ref
+        return value.startswith(raw_prefix) or value == commit_prefix or value.startswith(commit_prefix + "#")
 
     @gl.public.write.payable
     def create_promise(
@@ -128,8 +123,12 @@ class Changel(gl.Contract):
             raise gl.vm.UserError("EXPECTED_BAD_PROMISE_TERMS")
         if not self._address(challenger):
             raise gl.vm.UserError("EXPECTED_BAD_CHALLENGER")
-        if len(release_ref.strip()) < 1 or len(release_ref) > 120:
+        if len(release_ref) != 40:
             raise gl.vm.UserError("EXPECTED_RELEASE_REFERENCE")
+        try:
+            int(release_ref, 16)
+        except Exception:
+            raise gl.vm.UserError("EXPECTED_IMMUTABLE_COMMIT_SHA")
         if len(evidence_close_at) < 16 or len(evidence_close_at) > 80 or "T" not in evidence_close_at:
             raise gl.vm.UserError("EXPECTED_EVIDENCE_CLOSE_TIME")
         slug = self._repo_slug(repository_url)
@@ -188,6 +187,9 @@ class Changel(gl.Contract):
             raise gl.vm.UserError("EXPECTED_NOTE_TOO_LONG")
         if not self._bound_evidence_url(promise, url):
             raise gl.vm.UserError("EXPECTED_EVIDENCE_BOUND_TO_REPOSITORY_AND_RELEASE")
+        existing = self._evidence_for(promise_id)
+        if len(existing) >= 8 or len([item for item in existing if item["kind"] == kind]) >= 4:
+            raise gl.vm.UserError("EXPECTED_EVIDENCE_SLOT_LIMIT")
         self.evidence_counter = u256(self.evidence_counter + 1)
         evidence_id = str(self.evidence_counter)
         self.evidence[evidence_id] = self._json({
@@ -207,8 +209,8 @@ class Changel(gl.Contract):
         if not self._evidence_closed(promise):
             raise gl.vm.UserError("EXPECTED_EVIDENCE_PERIOD_OPEN")
         evidence = self._evidence_for(promise_id)
-        if not any(item["kind"] == "release_evidence" for item in evidence):
-            raise gl.vm.UserError("EXPECTED_RELEASE_EVIDENCE")
+        if not any(item["kind"] == "release_evidence" for item in evidence) or not any(item["kind"] == "counter_evidence" for item in evidence):
+            raise gl.vm.UserError("EXPECTED_EVIDENCE_FROM_BOTH_PARTIES")
         raw = self._review(promise, evidence)
         result = self._parse(raw)
         outcome = str(result.get("outcome", "undetermined"))
@@ -276,7 +278,7 @@ class Changel(gl.Contract):
     def _evidence_for(self, promise_id: str) -> typing.Any:
         out = []
         ids = self.promise_evidence_index.get(str(promise_id), "")
-        for evidence_id in ids.split("|")[:12]:
+        for evidence_id in ids.split("|"):
             raw = self.evidence.get(evidence_id, "")
             if raw:
                 out.append(self._load(raw))
@@ -308,7 +310,11 @@ class Changel(gl.Contract):
         text = str(raw).replace("```json", "").replace("```", "").strip()
         start, end = text.find("{"), text.rfind("}")
         try:
-            return json.loads(text[start:end + 1]) if start >= 0 and end > start else {}
+            value = json.loads(text[start:end + 1]) if start >= 0 and end > start else {}
+            if not isinstance(value, dict) or value.get("outcome") not in ("fulfilled", "partially_fulfilled", "not_fulfilled", "undetermined") or not isinstance(value.get("reasoning"), str) or not isinstance(value.get("evidence_fingerprints", []), list):
+                return {"outcome": "undetermined", "confidence": 0, "reasoning": "LLM_ERROR: malformed result", "evidence_fingerprints": []}
+            value["confidence"] = int(float(value.get("confidence", 0)))
+            return value
         except Exception:
             return {"outcome": "undetermined", "confidence": 0, "reasoning": "LLM_ERROR: malformed result"}
 
