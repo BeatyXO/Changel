@@ -48,6 +48,11 @@ export default function NewCasePage() {
       setError("Deposit must be a positive GEN amount with no more than 18 decimal places.");
       return;
     }
+    if (!/^[a-fA-F0-9]{40}$/.test(releaseRef)) {
+      setStatus("error");
+      setError("Use the full 40-character immutable Git commit SHA, not a branch, tag, or shortened hash.");
+      return;
+    }
 
     const identity =
       wallet.mode === "browser" && wallet.privateKey
@@ -116,8 +121,8 @@ export default function NewCasePage() {
                 <Input id="sourceUrl" name="sourceUrl" type="url" placeholder="https://github.com/org/repo" required />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="releaseRef">Immutable release reference</Label>
-                <Input id="releaseRef" name="releaseRef" placeholder="v3.2.0 or commit SHA" required />
+                <Label htmlFor="releaseRef">Immutable Git commit SHA</Label>
+                <Input id="releaseRef" name="releaseRef" placeholder="40-character commit SHA" pattern="[a-fA-F0-9]{40}" required />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="baseline">Promise terms</Label>
