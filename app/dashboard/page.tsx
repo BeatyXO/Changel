@@ -1,15 +1,36 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Activity, Camera, Coins, Scale } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatGen } from "@/lib/utils";
 import { contractAddress } from "@/lib/config";
+import { parseContractList, toCustodyCase, type ContractCase } from "@/lib/custodi-contract";
+import { readCustodi } from "@/lib/genlayer";
 
 export default function DashboardPage() {
+  const [metrics, setMetrics] = useState({ open: 0, deposits: 0n, evidence: 0, review: 0 });
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let active = true;
+    void readCustodi("get_promises", [100]).then((raw) => {
+      const cases = parseContractList<ContractCase>(raw).map((item) => toCustodyCase(item));
+      if (!active) return;
+      setMetrics({
+        open: cases.filter((item) => item.status === "open" || item.status === "evidence_submitted").length,
+        deposits: cases.reduce((sum, item) => sum + item.deposit, 0n),
+        evidence: cases.reduce((sum, item) => sum + item.pickupEvidence + item.returnEvidence, 0),
+        review: cases.filter((item) => item.status === "evidence_submitted").length,
+      });
+    }).catch(() => { if (active) setError("Live dashboard metrics could not be read from GenLayer."); });
+    return () => { active = false; };
+  }, []);
   const stats: Array<[string, string | number, LucideIcon]> = [
-    ["Open cases", 0, Activity],
-    ["Deposits tracked", formatGen(0), Coins],
-    ["Evidence items", 0, Camera],
-    ["Under review", 0, Scale],
+    ["Open cases", metrics.open, Activity],
+    ["Deposits tracked", formatGen(metrics.deposits), Coins],
+    ["Evidence items", metrics.evidence, Camera],
+    ["Under review", metrics.review, Scale],
   ];
 
   return (
@@ -32,9 +53,9 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm leading-6 text-vault-950/75">
-            Local seed metrics have been removed. Wire this dashboard to `get_promises`, `get_promise`, and `get_evidence`
-            on the deployed contract to show live counts.
+            Metrics are read from the deployed contract. Counts include the first 100 promises returned by `get_promises`.
           </p>
+          {error ? <p className="mt-3 text-sm text-rustline">{error}</p> : null}
           <p className="mt-3 break-all font-mono text-xs text-vault-950/70">{contractAddress || "No contract configured"}</p>
         </CardContent>
       </Card>

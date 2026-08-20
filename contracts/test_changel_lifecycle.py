@@ -30,12 +30,14 @@ class ChangelLifecycleTests(unittest.TestCase):
         return self.contract.create_promise("v2 security release", "security", "https://github.com/acme/widget", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", self.challenger, "Ship the authenticated API migration and security remediation notes.", "2026-12-31T00:00")
     def evidence(self, promise_id):
         self.sender(self.team); self.contract.submit_release_evidence(promise_id, "https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/README.md", "Release notes"); self.sender(self.challenger); self.contract.submit_counter_evidence(promise_id, "https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/README.md", "Counter")
+    def valid_fingerprints(self, promise_id):
+        return [{"url": item["url"], "render_status": "rendered", "content_sha256": "a" * 64} for item in self.contract._evidence_for(promise_id)]
     def test_all_explicit_outcomes_pay_documented_bands(self):
         expected={"fulfilled":[(self.team,100)], "partially_fulfilled":[(self.team,70),(self.challenger,30)], "not_fulfilled":[(self.challenger,100)]}
         for outcome, transfers in expected.items():
             with self.subTest(outcome=outcome):
                 TRANSFERS.clear(); promise_id=self.create(); self.evidence(promise_id)
-                self.contract._review=lambda *_: json.dumps({"outcome":outcome,"confidence":87,"reasoning":"test"})
+                self.contract._review=lambda *_: json.dumps({"outcome":outcome,"confidence":87,"reasoning":"test","evidence_fingerprints":self.valid_fingerprints(promise_id)})
                 self.gl.message_raw["datetime"]="2027-01-01T00:00"
                 self.sender(self.challenger); self.contract.challenge_promise(promise_id)
                 self.assertEqual(TRANSFERS, transfers)
@@ -44,7 +46,7 @@ class ChangelLifecycleTests(unittest.TestCase):
         with self.assertRaises(ValueError): self.contract.submit_counter_evidence(promise_id,"https://github.com/elsewhere/repo/releases/tag/v2.0.0","Wrong repo")
         self.contract.submit_counter_evidence(promise_id,"https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/README.md","Bound counter evidence")
     def test_undetermined_bond_can_be_recovered(self):
-        promise_id=self.create(); self.evidence(promise_id); self.contract._review=lambda *_:'{"outcome":"undetermined","confidence":0,"reasoning":"unavailable"}'; self.gl.message_raw["datetime"]="2027-01-01T00:00"
+        promise_id=self.create(); self.evidence(promise_id); self.contract._review=lambda *_:json.dumps({"outcome":"undetermined","confidence":0,"reasoning":"unavailable","evidence_fingerprints":self.valid_fingerprints(promise_id)}); self.gl.message_raw["datetime"]="2027-01-01T00:00"
         self.sender(self.challenger); self.contract.challenge_promise(promise_id); self.assertEqual(TRANSFERS, [])
         self.contract.recover_undetermined(promise_id); self.assertEqual(TRANSFERS, [(self.team,100)])
     def test_render_failure_becomes_undetermined_with_attestation(self):
@@ -56,7 +58,7 @@ class ChangelLifecycleTests(unittest.TestCase):
         self.sender(self.challenger); self.contract.challenge_promise(promise_id)
         record=json.loads(self.contract.get_promise(promise_id))
         self.assertEqual(record["status"], "undetermined")
-        self.assertIn("render_failed", record["evidence_fingerprints"])
+        self.assertEqual(record["evidence_fingerprints"], "[]")
     def test_evidence_order_and_expiry_recovery_are_enforced(self):
         promise_id=self.create(); self.evidence(promise_id); self.sender(self.challenger)
         self.contract.submit_counter_evidence(promise_id,"https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/README.md","Counter")
@@ -94,4 +96,11 @@ class ChangelLifecycleTests(unittest.TestCase):
         with self.assertRaises(ValueError): self.contract.submit_release_evidence(promise_id,"https://raw.githubusercontent.com/acme/widget/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/overflow","overflow")
         parsed=self.contract._parse('{"outcome":"fulfilled","reasoning":{"nested":true},"confidence":"bad"}')
         self.assertEqual(parsed["outcome"], "undetermined")
+    def test_incomplete_fingerprint_attestation_recovers_instead_of_paying(self):
+        promise_id=self.create(); self.evidence(promise_id)
+        self.contract._review=lambda *_: json.dumps({"outcome":"fulfilled","confidence":99,"reasoning":"claim","evidence_fingerprints":[]})
+        self.gl.message_raw["datetime"]="2027-01-01T00:00"; self.sender(self.challenger); self.contract.challenge_promise(promise_id)
+        record=json.loads(self.contract.get_promise(promise_id))
+        self.assertEqual(record["status"], "undetermined")
+        self.assertEqual(TRANSFERS, [])
 if __name__ == "__main__": unittest.main()

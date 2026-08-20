@@ -19,6 +19,7 @@ export function TxStatus({ current = "PROPOSING" }: { current?: string }) {
 
   return (
     <div className="grid gap-2 rounded-lg border border-vault-300/15 bg-vault-900/80 p-4">
+      {!isFinalized ? <p className="mb-1 text-xs text-vault-300/80">Waiting for GenLayer consensus to finalize this write. Keep this page open; refreshes are safe.</p> : null}
       {stages.map((stage, index) => {
         const done = isFinalized ? index <= currentIndex : index < currentIndex;
         const active = !isFinalized && index === currentIndex;

@@ -23,7 +23,7 @@ The contract stores the promise terms, canonical `https://github.com/owner/repos
 
 ## Contract surface
 
-Current StudioNet contract: `0x6cFE4DA1FA63eEAad2e8000Da10AB7bf06852CaB`.
+Current StudioNet contract: `0xC2b5CF24701887Dd6a0C61F09d7e387e508cAb75`.
 
 ```text
 create_promise(title, scope, repository_url, immutable_commit_sha, challenger, promise_terms, evidence_close_at) payable

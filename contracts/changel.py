@@ -204,7 +204,8 @@ class Changel(gl.Contract):
     def challenge_promise(self, promise_id: str):
         promise = self._load_promise(promise_id)
         self._require_party(promise)
-        if promise["status"] not in ("open", "evidence_submitted"):
+        current_status = str(promise.get("status", "")).strip().lower()
+        if current_status not in ("open", "evidence_submitted"):
             raise gl.vm.UserError("EXPECTED_PROMISE_OPEN")
         if not self._evidence_closed(promise):
             raise gl.vm.UserError("EXPECTED_EVIDENCE_PERIOD_OPEN")
@@ -234,7 +235,18 @@ class Changel(gl.Contract):
         promise["confidence"] = max(0, min(100, int(result.get("confidence", 0))))
         promise["reasoning"] = self._limit(result.get("reasoning", ""), 1200)
         fingerprints = result.get("evidence_fingerprints", [])
-        promise["evidence_fingerprints"] = self._json(fingerprints if isinstance(fingerprints, list) else [])
+        if not self._valid_fingerprints(promise, evidence, fingerprints):
+            outcome = "undetermined"
+            team, challenger = 0, 0
+            promise["status"] = "undetermined"
+            promise["team_allocation"] = "0"
+            promise["challenger_allocation"] = "0"
+            promise["paid_to_team"] = "0"
+            promise["paid_to_challenger"] = "0"
+            promise["reasoning"] = "LLM_ERROR: validator evidence fingerprint attestation was incomplete or malformed."
+            promise["evidence_fingerprints"] = "[]"
+        else:
+            promise["evidence_fingerprints"] = self._json(fingerprints)
         self.promises[str(promise_id)] = self._json(promise)
         self._pay(promise["team"], team)
         self._pay(promise["challenger"], challenger)
@@ -267,7 +279,8 @@ class Changel(gl.Contract):
         """
         promise = self._load_promise(promise_id)
         self._require_party(promise)
-        if promise["status"] not in ("open", "evidence_submitted") or not self._evidence_closed(promise):
+        current_status = str(promise.get("status", "")).strip().lower()
+        if current_status not in ("open", "evidence_submitted") or not self._evidence_closed(promise):
             raise gl.vm.UserError("EXPECTED_EXPIRED_OPEN_PROMISE")
         evidence = self._evidence_for(promise_id)
         has_team = any(item["kind"] == "release_evidence" for item in evidence)
@@ -340,6 +353,35 @@ class Changel(gl.Contract):
             )
             return str(gl.nondet.exec_prompt(prompt))[:2600]
         return gl.eq_principle.prompt_comparative(leader, FULFILLMENT_EQ_PRINCIPLE)
+
+    def _valid_fingerprints(self, promise: typing.Any, evidence: typing.Any, fingerprints: typing.Any) -> bool:
+        """Require the validator attestation to cover exactly the fetched evidence."""
+        if not isinstance(fingerprints, list) or len(fingerprints) != len(evidence):
+            return False
+        expected = {}
+        for evidence_item in evidence:
+            url = str(evidence_item["url"]).lower()
+            expected[url] = expected.get(url, 0) + 1
+        seen = {}
+        for item in fingerprints:
+            if not isinstance(item, dict):
+                return False
+            url = str(item.get("url", "")).lower()
+            status = item.get("render_status")
+            if url not in expected or status not in ("rendered", "render_failed"):
+                return False
+            if status == "rendered":
+                digest = str(item.get("content_sha256", ""))
+                if len(digest) != 64:
+                    return False
+                try:
+                    int(digest, 16)
+                except Exception:
+                    return False
+            seen[url] = seen.get(url, 0) + 1
+            if seen[url] > expected[url]:
+                return False
+        return seen == expected
 
     def _parse(self, raw: typing.Any) -> typing.Any:
         text = str(raw).replace("```json", "").replace("```", "").strip()
