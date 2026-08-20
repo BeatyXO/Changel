@@ -9,7 +9,7 @@ if (!address || !privateKey || !promiseId) throw new Error("Contract address, se
 
 async function main() {
   const client = createClient({ chain: studionet, account: createAccount(privateKey) });
-  const hash = await client.writeContract({ address, functionName: "settle_expired_single_party_evidence", args: [promiseId] as never[] });
+  const hash = await client.writeContract({ address, functionName: "settle_expired_single_party_evidence", args: [promiseId] as never[], value: 0n });
   const receipt = await client.waitForTransactionReceipt({ hash, status: TransactionStatus.FINALIZED, interval: 30_000, retries: 20 });
   if (receipt.txExecutionResultName === ExecutionResult.FINISHED_WITH_ERROR) throw new Error(`Settlement failed: ${hash}`);
   console.log(`Settlement finalized: ${hash}`);
