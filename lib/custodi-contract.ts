@@ -1,8 +1,8 @@
 import type { CustodyCase, CustodyStatus, DamageVerdict, EvidenceItem, EvidenceKind } from "@/lib/types";
 export type ContractCase = { id?: string; title?: string; scope?: string; team?: string; challenger?: string; bond?: string; status?: string; evidence_close_at?: string; repository_url?: string; release_ref?: string; promise_terms?: string; outcome?: string; team_allocation?: string; challenger_allocation?: string; confidence?: number; reasoning?: string; };
 export type ContractEvidence = { id?: string; promise_id?: string; kind?: string; url?: string; note?: string; submitted_by?: string; submitted_at?: string; };
-const statuses: CustodyStatus[] = ["open", "evidence_submitted", "settled", "undetermined", "recovered_undetermined", "recovered_expired"];
-const outcomes: DamageVerdict[] = ["fulfilled", "partially_fulfilled", "not_fulfilled", "undetermined"];
+const statuses: CustodyStatus[] = ["open", "evidence_submitted", "settled", "undetermined", "recovered_undetermined", "recovered_expired", "settled_single_party_evidence"];
+const outcomes: DamageVerdict[] = ["fulfilled", "partially_fulfilled", "not_fulfilled", "undetermined", "team_only_evidence", "challenger_only_evidence"];
 export function parseContractList<T>(value: unknown): T[] { if (Array.isArray(value)) return value as T[]; if (typeof value !== "string" || !value.trim()) return []; const parsed=JSON.parse(value); return Array.isArray(parsed) ? parsed as T[] : []; }
 export function toCustodyCase(item: ContractCase, evidence: EvidenceItem[] = []): CustodyCase {
  const outcome=outcomes.includes(item.outcome as DamageVerdict) ? item.outcome as DamageVerdict : undefined;

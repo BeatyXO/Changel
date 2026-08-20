@@ -10,3 +10,4 @@ The inherited physical-item labels, damage criteria, and payout bands have been 
 - Evidence uses canonical GitHub paths bound to an immutable 40-character commit SHA; substring and lookalike URLs are rejected.
 - Render statuses and SHA-256 content fingerprints are persisted. Malformed validator output becomes recoverable `undetermined`.
 - Direct lifecycle tests cover payouts, lookalike URLs, slot starvation, malformed validator output, rendering failure, ordering, recovery, and string IDs.
+- Expired one-sided evidence is a documented terminal state: team-only evidence releases 100% to the team; challenger-only evidence releases 100% to the challenger. Direct tests prove both payouts and terminal records, preventing stranded GEN.

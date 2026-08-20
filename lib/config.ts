@@ -18,6 +18,7 @@ export const contractFunctions = [
   "submit_release_evidence",
   "submit_counter_evidence",
   "challenge_promise",
+  "settle_expired_single_party_evidence",
   "recover_undetermined",
   "recover_expired_without_evidence",
   "get_promise",

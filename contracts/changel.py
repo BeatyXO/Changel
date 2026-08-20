@@ -258,6 +258,41 @@ class Changel(gl.Contract):
         self._pay(promise["team"], amount)
 
     @gl.public.write
+    def settle_expired_single_party_evidence(self, promise_id: str):
+        """Deterministically settle an expired case when only one party participated.
+
+        This path deliberately does not invoke validators: an AI review needs both
+        parties' evidence. After the agreed close time, the bond goes to the only
+        party that supplied evidence, so no one-sided case can strand GEN.
+        """
+        promise = self._load_promise(promise_id)
+        self._require_party(promise)
+        if promise["status"] not in ("open", "evidence_submitted") or not self._evidence_closed(promise):
+            raise gl.vm.UserError("EXPECTED_EXPIRED_OPEN_PROMISE")
+        evidence = self._evidence_for(promise_id)
+        has_team = any(item["kind"] == "release_evidence" for item in evidence)
+        has_challenger = any(item["kind"] == "counter_evidence" for item in evidence)
+        if has_team == has_challenger:
+            raise gl.vm.UserError("EXPECTED_EXACTLY_ONE_PARTY_EVIDENCE")
+        amount = int(promise["bond"])
+        if has_team:
+            team, challenger, outcome = amount, 0, "team_only_evidence"
+            reasoning = "Evidence period expired with team release evidence only; bond released to team."
+        else:
+            team, challenger, outcome = 0, amount, "challenger_only_evidence"
+            reasoning = "Evidence period expired with challenger counter-evidence only; bond released to challenger."
+        promise["status"] = "settled_single_party_evidence"
+        promise["outcome"] = outcome
+        promise["team_allocation"] = str(team)
+        promise["challenger_allocation"] = str(challenger)
+        promise["paid_to_team"] = str(team)
+        promise["paid_to_challenger"] = str(challenger)
+        promise["reasoning"] = reasoning
+        self.promises[str(promise_id)] = self._json(promise)
+        self._pay(promise["team"], team)
+        self._pay(promise["challenger"], challenger)
+
+    @gl.public.write
     def recover_undetermined(self, promise_id: str):
         promise = self._load_promise(promise_id)
         self._require_party(promise)

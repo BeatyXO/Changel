@@ -1,5 +1,5 @@
-export type CustodyStatus = "open" | "evidence_submitted" | "settled" | "undetermined" | "recovered_undetermined" | "recovered_expired";
-export type DamageVerdict = "fulfilled" | "partially_fulfilled" | "not_fulfilled" | "undetermined";
+export type CustodyStatus = "open" | "evidence_submitted" | "settled" | "undetermined" | "recovered_undetermined" | "recovered_expired" | "settled_single_party_evidence";
+export type DamageVerdict = "fulfilled" | "partially_fulfilled" | "not_fulfilled" | "undetermined" | "team_only_evidence" | "challenger_only_evidence";
 export type EvidenceKind = "release_evidence" | "counter_evidence";
 
 export type CustodyCase = {

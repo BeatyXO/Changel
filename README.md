@@ -12,8 +12,10 @@ A team locks a GEN bond against a precise promise, one canonical GitHub reposito
 | `partially_fulfilled` | 70% | 30% |
 | `not_fulfilled` | 0% | 100% |
 | `undetermined` | No immediate transfer; either party can return 100% to the team that posted the bond | 0% |
+| only team evidence after close | 100% | 0% |
+| only challenger evidence after close | 0% | 100% |
 
-There are no appeal or expiry functions. The contract exposes only paths it implements.
+AI review requires evidence from both parties. If the close time passes with exactly one participating party, either party can invoke a deterministic terminal settlement: the full bond goes to the only party that submitted evidence. No-evidence expiry returns the bond to the team, and `undetermined` reviews remain recoverable to the team that posted the bond. These paths ensure that no recorded bond can be stranded.
 
 ## Evidence binding
 
@@ -21,13 +23,15 @@ The contract stores the promise terms, canonical `https://github.com/owner/repos
 
 ## Contract surface
 
-Current StudioNet contract: `0x74E9f63087480Dd899443b117ba8d8b65DeE43B3`.
+Current StudioNet contract: `0x6cFE4DA1FA63eEAad2e8000Da10AB7bf06852CaB`.
 
 ```text
 create_promise(title, scope, repository_url, immutable_commit_sha, challenger, promise_terms, evidence_close_at) payable
 submit_release_evidence(promise_id, url, note)                 # team only
 submit_counter_evidence(promise_id, url, note)                 # designated challenger only
 challenge_promise(promise_id)                                  # either party; GenLayer consensus
+settle_expired_single_party_evidence(promise_id)                # either party; deterministic after close
+recover_expired_without_evidence(promise_id)                    # team only; deterministic after close
 recover_undetermined(promise_id)                               # either party
 get_promise(promise_id)
 get_promises(limit)
